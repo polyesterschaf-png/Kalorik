@@ -74,10 +74,15 @@ else:
         st.subheader("📈 Balkendiagramm")
         try:
             fig, ax = plt.subplots()
-            ax.bar(df["Kategorie"], df["Temperatur [°C]"], color="orange")
+            categories = df["Kategorie"]
+            temperatures = df["Temperatur [°C]"]
+
+            fig, ax = plt.subplots()
+            ax.bar(x=categories, height=temperatures, color="orange")
+            ax.set_xlabel("Kategorie")
             ax.set_ylabel("Temperatur [°C]")
             ax.set_title(f"{station} – {gruppen_id}")
-            ax.set_ylim(bottom=0)  # ⬅️ y-Achse beginnt bei 0 °C
+            ax.set_ylim(bottom=0)  # y-Achse beginnt bei 0 °C
             st.pyplot(fig)
         except:
             st.warning("Bitte gültige Werte eingeben.")

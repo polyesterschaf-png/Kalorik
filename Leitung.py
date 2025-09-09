@@ -12,7 +12,7 @@ station = st.selectbox("Station auswählen", [
 ])
 
 st.subheader("Messwerterfassung")
-df = st.experimental_data_editor(
+df = st.data_editor(
     pd.DataFrame({
         "Zeit [min]": [],
         "Temperatur [°C]": [],

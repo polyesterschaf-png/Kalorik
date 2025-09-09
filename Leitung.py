@@ -46,6 +46,7 @@ if lehrkraft_aktiv:
             ax.set_xlabel("Zeit [min]")
             ax.set_ylabel("Temperatur [°C]")
             ax.set_title("Gesamtdiagramm Station E – alle Gruppen")
+            ax.set_ylim(bottom=0)
             ax.legend()
             st.pyplot(fig)
 
@@ -76,6 +77,7 @@ else:
             ax.bar(df["Kategorie"], df["Temperatur [°C]"], color="orange")
             ax.set_ylabel("Temperatur [°C]")
             ax.set_title(f"{station} – {gruppen_id}")
+            ax.set_ylim(bottom=0)  # ⬅️ y-Achse beginnt bei 0 °C
             st.pyplot(fig)
         except:
             st.warning("Bitte gültige Werte eingeben.")
@@ -101,6 +103,7 @@ else:
             ax.set_xlabel("Zeit [min]")
             ax.set_ylabel("Temperatur [°C]")
             ax.set_title(f"{station} – {gruppen_id}")
+            ax.set_ylim(bottom=0)
             ax.legend()
             st.pyplot(fig)
         except:

@@ -3,18 +3,13 @@ import os
 from datetime import datetime
 import tempfile
 
-# Hilfsfunktion zur Zeichenbereinigung
 def clean_text(text):
     replacements = {
         "📊": "Messwerte:",
         "🧠": "Auswertung:",
         "📄": "PDF:",
-        "–": "-",  # typografisches Minus
-        "°": " Grad",
-        "ü": "ue",
-        "ö": "oe",
-        "ä": "ae",
-        "ß": "ss"
+        "–": "-", "°": " Grad",
+        "ü": "ue", "ö": "oe", "ä": "ae", "ß": "ss"
     }
     for emoji, replacement in replacements.items():
         text = text.replace(emoji, replacement)
@@ -39,10 +34,7 @@ def create_pdf(gruppe, station, df, auswertung_text, fig=None):
     pdf.add_page()
     pdf.set_font("Arial", size=12)
 
-    # Zeitstempel
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
-
-    # Kopfbereich
     pdf.cell(0, 10, clean_text(f"Gruppe: {gruppe}"), ln=True)
     pdf.cell(0, 10, clean_text(f"Station: {station}"), ln=True)
     pdf.cell(0, 10, clean_text(f"Zeitpunkt: {timestamp}"), ln=True)
@@ -55,8 +47,10 @@ def create_pdf(gruppe, station, df, auswertung_text, fig=None):
     pdf.multi_cell(0, 8, clean_text(auswertung_text))
     pdf.ln(5)
 
-    # Diagramm einfügen (falls vorhanden)
+    # Diagramm einfügen
     if fig:
+        pdf.set_font("Arial", "B", 12)
+        pdf.cell(0, 10, clean_text("Diagramm zur Station:"), ln=True)
         with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmpfile:
             fig.savefig(tmpfile.name, dpi=150)
             pdf.image(tmpfile.name, x=10, w=180)

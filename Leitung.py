@@ -28,6 +28,11 @@ else:
 # Lehrkraftmodus
 if lehrkraft_aktiv:
     st.header("👩‍🏫 Lehrkraftmodus – Gruppenauswertung")
+    from summary_utils import create_summary_pdf
+
+    if st.button("📄 Zusammenfassungs-PDF erstellen"):
+        pdf = create_summary_pdf()
+        st.download_button("📥 PDF herunterladen", data=pdf, file_name="Zusammenfassung_Waermeuebertragung.pdf")
 
     files = glob.glob(f"{DATENORDNER}/*.csv")
     if not files:

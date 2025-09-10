@@ -12,7 +12,7 @@ DATENORDNER = "gruppen_daten"
 os.makedirs(DATENORDNER, exist_ok=True)
 
 # Lehrkraftmodus mit Passwortschutz
-st.sidebar.header("🔐 Lehrkraftzugang")
+st.sidebar.header("🔐 Wolfsrevier")
 lehrkraft_passwort = st.sidebar.text_input("Passwort eingeben", type="password")
 lehrkraft_aktiv = False
 

@@ -6,6 +6,7 @@ from constants import DATENORDNER
 
 def clean_text(text):
     replacements = {
+        "📊": "Messwerte:", "🧠": "Auswertung:", "📄": "PDF:",
         "–": "-", "°": " Grad", "ü": "ue", "ö": "oe", "ä": "ae", "ß": "ss"
     }
     for emoji, replacement in replacements.items():
@@ -32,7 +33,7 @@ def create_summary_pdf():
     pdf.set_font("Arial", size=12)
 
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
-    pdf.cell(0, 10, f"Erstellt am: {timestamp}", ln=True)
+    pdf.cell(0, 10, clean_text(f"Erstellt am: {timestamp}"), ln=True)
     pdf.ln(5)
 
     daten = []
@@ -42,22 +43,21 @@ def create_summary_pdf():
             try:
                 df = pd.read_csv(pfad)
                 if df.empty or "Auswertung" not in df.columns:
-                    continue  # Datei überspringen, wenn leer oder keine Auswertung
+                    continue
                 gruppe = file.split("_")[0]
                 station = "_".join(file.split("_")[1:]).replace(".csv", "")
                 auswertung = df["Auswertung"].iloc[0]
                 daten.append({
-                    "Gruppe": gruppe,
-                    "Station": station,
-                    "Auswertung": auswertung
+                    "Gruppe": clean_text(gruppe),
+                    "Station": clean_text(station),
+                    "Auswertung": clean_text(auswertung)
                 })
             except pd.errors.EmptyDataError:
-                continue  # Datei ist leer → überspringen
+                continue
             except Exception as e:
                 print(f"Fehler beim Lesen von {file}: {e}")
                 continue
 
-    # Sortieren nach Station
     daten.sort(key=lambda x: x["Station"])
 
     aktuelle_station = ""
@@ -65,10 +65,10 @@ def create_summary_pdf():
         if eintrag["Station"] != aktuelle_station:
             aktuelle_station = eintrag["Station"]
             pdf.set_font("Arial", "B", 12)
-            pdf.cell(0, 10, clean_text(f"Station: {aktuelle_station}"), ln=True)
+            pdf.cell(0, 10, f"Station: {aktuelle_station}", ln=True)
             pdf.set_font("Arial", size=11)
 
-        pdf.multi_cell(0, 8, clean_text(f"Gruppe: {eintrag['Gruppe']}\nAuswertung: {eintrag['Auswertung']}"))
+        pdf.multi_cell(0, 8, f"Gruppe: {eintrag['Gruppe']}\nAuswertung: {eintrag['Auswertung']}")
         pdf.ln(3)
 
     return pdf.output(dest='S').encode('latin1')

@@ -62,6 +62,7 @@ if lehrkraft_aktiv:
             ax.set_ylabel("Temperatur [°C]")
             ax.set_ylim(bottom=0)
             ax.legend()
+            pdf = create_pdf(gruppen_id, station, df, auswertung, fig)
             st.pyplot(fig)
 
 # Schülermodus
@@ -98,6 +99,7 @@ else:
         st.subheader("📈 Balkendiagramm")
         try:
             fig = plot_balken(df, station, gruppen_id)
+            pdf = create_pdf(gruppen_id, station, df, auswertung, fig)
             st.pyplot(fig)
         except Exception as e:
             st.warning(f"Fehler beim Zeichnen des Diagramms: {e}")

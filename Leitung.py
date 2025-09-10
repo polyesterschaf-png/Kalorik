@@ -92,22 +92,57 @@ else:
 
     # Stationen A & C – Balkendiagramm
     elif station in ["A – Wärmeleitung", "C – Wärmestrahlung"]:
-        st.subheader("Messwerterfassung")
-        if df.empty:
-            df = pd.DataFrame({
-                "Kategorie": ["Material 1", "Material 2"],
-                "Temperatur [°C]": [None, None],
-                "Bemerkung": ["", ""]
-            })
-        df = st.data_editor(df, num_rows="dynamic", use_container_width=True)
+        elif station in ["A – Wärmeleitung", "C – Wärmestrahlung"]:
+    st.subheader("📋 Messwerterfassung")
 
-        st.subheader("📈 Balkendiagramm")
-        try:
-            fig = plot_balken(df, station, gruppen_id)
+    # Initialisiere leeres DataFrame, falls keine Daten vorhanden
+    if df.empty:
+        df = pd.DataFrame({
+            "Kategorie": ["Material 1", "Material 2"],
+            "Temperatur [°C]": [None, None],
+            "Bemerkung": ["", ""]
+        })
+
+    # Dateneditor anzeigen
+    df = st.data_editor(df, num_rows="dynamic", use_container_width=True)
+
+    # Diagramm vorbereiten
+    fig = None
+    st.subheader("📈 Balkendiagramm")
+    try:
+        from plot_utils import plot_balken  # sicherstellen, dass importiert ist
+        fig = plot_balken(df, station, gruppen_id)
+        st.pyplot(fig)
+    except Exception as e:
+        st.warning(f"Fehler beim Zeichnen des Diagramms: {e}")
+
+    # Auswertungstext
+    st.subheader("🧠 Auswertung")
+    auswertung = st.text_area(
+        "Was zeigt das Diagramm oder deine Beobachtung? Welche Wärmeübertragungsart ist dominant?",
+        value=auswertung_vorlage,
+        height=150,
+        key="auswertung"
+    )
+
+    # Speichern & PDF
+    if st.button("💾 Ergebnisse speichern"):
+        if gruppen_id:
+            from data_utils import speichere_daten
+            from pdf_utils import create_pdf
+
+            speichere_daten(speicherpfad, df, auswertung)
+            st.success(f"Ergebnisse gespeichert unter: {speicherpfad}")
+
             pdf = create_pdf(gruppen_id, station, df, auswertung, fig)
-            st.pyplot(fig)
-        except Exception as e:
-            st.warning(f"Fehler beim Zeichnen des Diagramms: {e}")
+            st.download_button(
+                "📄 PDF herunterladen",
+                data=pdf,
+                file_name=f"{gruppen_id}_{stationsname}.pdf"
+            )
+        else:
+            st.error("Bitte zuerst eine Gruppen-ID eingeben.")
+
 
     # Station E – Temperaturverlauf
     elif station == "E – Vergleich Thermos vs. Becher":

@@ -19,7 +19,7 @@ class SummaryPDF(FPDF):
         if os.path.exists(logo_path):
             self.image(logo_path, x=160, y=10, w=40)
         self.set_font("Arial", "B", 14)
-        self.cell(0, 10, "Zusammenfassung aller Gruppen – Wärmeübertragung", ln=True)
+        self.cell(0, 10, "Zusammenfassung aller Gruppen - Wärmeübertragung", ln=True)
         self.ln(10)
 
     def footer(self):

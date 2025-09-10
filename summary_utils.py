@@ -15,7 +15,7 @@ def clean_text(text):
 
 class SummaryPDF(FPDF):
     def header(self):
-        logo_path = os.path.join("assets", "HPG-Header-Logo_v2.png")
+        logo_path = os.path.join("HPG-Header-Logo_v2.png")
         if os.path.exists(logo_path):
             self.image(logo_path, x=160, y=10, w=40)
         self.set_font("Arial", "B", 14)
@@ -65,7 +65,7 @@ def create_summary_pdf():
         if eintrag["Station"] != aktuelle_station:
             aktuelle_station = eintrag["Station"]
             pdf.set_font("Arial", "B", 12)
-            pdf.cell(0, 10, f"Station: {aktuelle_station}", ln=True)
+            pdf.cell(0, 10, clean_text(f"Station: {aktuelle_station}"), ln=True)
             pdf.set_font("Arial", size=11)
 
         pdf.multi_cell(0, 8, f"Gruppe: {eintrag['Gruppe']}\nAuswertung: {eintrag['Auswertung']}")

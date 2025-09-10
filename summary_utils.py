@@ -68,7 +68,7 @@ def create_summary_pdf():
             pdf.cell(0, 10, clean_text(f"Station: {aktuelle_station}"), ln=True)
             pdf.set_font("Arial", size=11)
 
-        pdf.multi_cell(0, 8, f"Gruppe: {eintrag['Gruppe']}\nAuswertung: {eintrag['Auswertung']}")
+        pdf.multi_cell(0, 8, clean_text(f"Gruppe: {eintrag['Gruppe']}\nAuswertung: {eintrag['Auswertung']}"))
         pdf.ln(3)
 
     return pdf.output(dest='S').encode('latin1')

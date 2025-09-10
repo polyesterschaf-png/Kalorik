@@ -255,21 +255,21 @@ if not lehrkraft_aktiv:
             st.error("Bitte zuerst eine Gruppen-ID eingeben.")
             
 st.subheader("📂 Gruppenauswahl")
-    gruppen = sorted(set([os.path.basename(f).split("_")[0] for f in files]))
-    stationen = sorted(set(["_".join(os.path.basename(f).split("_")[1:]).replace(".csv", "") for f in files]))
-    gruppe = st.selectbox("Gruppe auswählen", gruppen)
-    station_wahl = st.selectbox("Station auswählen", stationen)
+gruppen = sorted(set([os.path.basename(f).split("_")[0] for f in files]))
+stationen = sorted(set(["_".join(os.path.basename(f).split("_")[1:]).replace(".csv", "") for f in files]))
+gruppe = st.selectbox("Gruppe auswählen", gruppen)
+station_wahl = st.selectbox("Station auswählen", stationen)
 
-    pfad = f"{DATENORDNER}/{gruppe}_{station_wahl}.csv"
-    if os.path.exists(pfad):
-        df = pd.read_csv(pfad)
-        auswertung_text = df["Auswertung"].iloc[0] if "Auswertung" in df.columns else ""
-        df = df.drop(columns=["Auswertung"], errors="ignore")
-        st.write("📊 Messwerte:")
-        st.dataframe(df)
-        st.write("🧠 Auswertung:")
-        st.write(auswertung_text)
-        pdf = create_pdf(gruppe, station_wahl, df, auswertung_text)
-        st.download_button("📄 PDF herunterladen", data=pdf, file_name=f"{gruppe}_{station_wahl}.pdf")
-    else:
-        st.warning("Keine Daten für diese Auswahl gefunden.")
+pfad = f"{DATENORDNER}/{gruppe}_{station_wahl}.csv"
+if os.path.exists(pfad):
+    df = pd.read_csv(pfad)
+    auswertung_text = df["Auswertung"].iloc[0] if "Auswertung" in df.columns else ""
+    df = df.drop(columns=["Auswertung"], errors="ignore")
+    st.write("📊 Messwerte:")
+    st.dataframe(df)
+    st.write("🧠 Auswertung:")
+    st.write(auswertung_text)
+    pdf = create_pdf(gruppe, station_wahl, df, auswertung_text)
+    st.download_button("📄 PDF herunterladen", data=pdf, file_name=f"{gruppe}_{station_wahl}.pdf")
+else:
+    st.warning("Keine Daten für diese Auswahl gefunden.")

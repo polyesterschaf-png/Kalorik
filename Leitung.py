@@ -12,7 +12,7 @@ DATENORDNER = "gruppen_daten"
 os.makedirs(DATENORDNER, exist_ok=True)
 
 # Lehrkraftmodus mit Passwortschutz
-st.sidebar.header("🔐 Wolfsrevier")
+st.sidebar.header("🔐 Lehrkraftzugang")
 lehrkraft_passwort = st.sidebar.text_input("Passwort eingeben", type="password")
 lehrkraft_aktiv = False
 
@@ -59,7 +59,12 @@ else:
         "D – Thermosflasche", "E – Vergleich Thermos vs. Becher"
     ])
 
-    if station in ["A – Wärmeleitung", "B – Konvektion", "C – Wärmestrahlung"]:
+    if station == "B – Konvektion":
+        st.subheader("📷 Beobachtung statt Messung")
+        st.info("Diese Station benötigt keine Messwerte. Bitte fertige eine Skizze oder ein Foto an und beschreibe deine Beobachtung unten.")
+        df = pd.DataFrame()  # leere Tabelle für Speicherung
+
+    elif station in ["A – Wärmeleitung", "C – Wärmestrahlung"]:
         st.subheader("Messwerterfassung")
         df = st.data_editor(
             pd.DataFrame({
@@ -83,7 +88,6 @@ else:
             ax.set_title(f"{station} – {gruppen_id}")
             ax.set_ylim(bottom=0)
 
-            # Optional: Temperaturwerte über den Balken anzeigen
             for i, temp in enumerate(temperatures):
                 ax.text(i, temp + 0.5, f"{temp:.1f}°C", ha='center')
 
@@ -124,12 +128,13 @@ else:
 
     # Auswertung
     st.subheader("🧠 Auswertung")
-    auswertung = st.text_area("Was zeigt das Diagramm? Welche Wärmeübertragungsart ist dominant?", height=150)
+    auswertung = st.text_area("Was zeigt das Diagramm oder deine Beobachtung? Welche Wärmeübertragungsart ist dominant?", height=150)
 
     # Speichern
     if st.button("💾 Ergebnisse speichern"):
         if gruppen_id:
-            speicherpfad = f"{DATENORDNER}/{gruppen_id}_{station}.csv"
+            stationsname = station.replace("–", "").replace(" ", "_")
+            speicherpfad = f"{DATENORDNER}/{gruppen_id}_{stationsname}.csv"
             df.to_csv(speicherpfad, index=False)
             st.success(f"Ergebnisse für {gruppen_id} gespeichert unter: {speicherpfad}")
         else:

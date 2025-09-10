@@ -4,16 +4,16 @@ from datetime import datetime
 import tempfile
 
 def clean_text(text):
+    if not isinstance(text, str):
+        text = str(text) if text is not None else ""
     replacements = {
-        "📊": "Messwerte:",
-        "🧠": "Auswertung:",
-        "📄": "PDF:",
-        "–": "-", "°": " Grad",
-        "ü": "ue", "ö": "oe", "ä": "ae", "ß": "ss"
+        "📊": "Messwerte:", "🧠": "Auswertung:", "📄": "PDF:",
+        "–": "-", "°": " Grad", "ü": "ue", "ö": "oe", "ä": "ae", "ß": "ss"
     }
     for emoji, replacement in replacements.items():
         text = text.replace(emoji, replacement)
     return text.encode("latin1", "ignore").decode("latin1")
+
 
 class PDF(FPDF):
     def header(self):

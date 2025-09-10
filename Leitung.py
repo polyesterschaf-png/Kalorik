@@ -9,6 +9,7 @@ from constants import STATIONEN, DATENORDNER
 from data_utils import lade_daten, speichere_daten
 from pdf_utils import create_pdf
 from plot_utils import plot_balken, plot_verlauf
+from summary_utils import create_summary_pdf
 
 # Streamlit Setup
 st.set_page_config(page_title="Wärmeübertragung", layout="wide")
@@ -28,11 +29,6 @@ else:
 # Lehrkraftmodus
 if lehrkraft_aktiv:
     st.header("👩‍🏫 Lehrkraftmodus – Gruppenauswertung")
-    from summary_utils import create_summary_pdf
-
-    if st.button("📄 Zusammenfassungs-PDF erstellen"):
-        pdf = create_summary_pdf()
-        st.download_button("📥 PDF herunterladen", data=pdf, file_name="Zusammenfassung_Waermeuebertragung.pdf")
 
     files = glob.glob(f"{DATENORDNER}/*.csv")
     if not files:
@@ -45,30 +41,29 @@ if lehrkraft_aktiv:
         st.write("🧠 Auswertung:")
         st.write(auswertung_text)
 
+        fig = None
+        if "Vergleich Thermos vs. Becher" in selected_file:
+            st.subheader("📈 Temperaturverlauf – Station E")
+            try:
+                fig = plot_verlauf(df, "Station E", os.path.basename(selected_file).split("_")[0])
+                st.pyplot(fig)
+            except Exception as e:
+                st.warning(f"Fehler beim Zeichnen des Diagramms: {e}")
+
         pdf = create_pdf(
             os.path.basename(selected_file).split("_")[0],
             "_".join(os.path.basename(selected_file).split("_")[1:]).replace(".csv", ""),
             df,
-            auswertung_text
+            auswertung_text,
+            fig
         )
         st.download_button("📄 PDF herunterladen", data=pdf, file_name=os.path.basename(selected_file).replace(".csv", ".pdf"))
 
-        # Aggregiertes Diagramm für Station E
-        if "Vergleich Thermos vs. Becher" in selected_file:
-            st.subheader("📈 Gesamtdiagramm Station E – alle Gruppen")
-            fig, ax = plt.subplots()
-            for f in files:
-                if "Vergleich Thermos vs. Becher" in f:
-                    df_e = pd.read_csv(f)
-                    gruppe = os.path.basename(f).split("_")[0]
-                    ax.plot(df_e["Zeit [min]"], df_e["Temperatur Thermos [°C]"], label=f"{gruppe} – Thermos", linestyle="--")
-                    ax.plot(df_e["Zeit [min]"], df_e["Temperatur Becher [°C]"], label=f"{gruppe} – Becher", linestyle=":")
-            ax.set_xlabel("Zeit [min]")
-            ax.set_ylabel("Temperatur [°C]")
-            ax.set_ylim(bottom=0)
-            ax.legend()
-            pdf = create_pdf(gruppen_id, station, df, auswertung, fig)
-            st.pyplot(fig)
+    # Zusammenfassungs-PDF
+    st.subheader("📋 Zusammenfassung aller Gruppen")
+    if st.button("📄 Zusammenfassungs-PDF erstellen"):
+        pdf = create_summary_pdf()
+        st.download_button("📥 PDF herunterladen", data=pdf, file_name="Zusammenfassung_Waermeuebertragung.pdf")
 
 # Schülermodus
 else:
@@ -92,61 +87,43 @@ else:
 
     # Stationen A & C – Balkendiagramm
     elif station in ["A – Wärmeleitung", "C – Wärmestrahlung"]:
-        elif station in ["A – Wärmeleitung", "C – Wärmestrahlung"]:
-    st.subheader("📋 Messwerterfassung")
+        st.subheader("📋 Messwerterfassung")
+        if df.empty:
+            df = pd.DataFrame({
+                "Kategorie": ["Material 1", "Material 2"],
+                "Temperatur [°C]": [None, None],
+                "Bemerkung": ["", ""]
+            })
+        df = st.data_editor(df, num_rows="dynamic", use_container_width=True)
 
-    # Initialisiere leeres DataFrame, falls keine Daten vorhanden
-    if df.empty:
-        df = pd.DataFrame({
-            "Kategorie": ["Material 1", "Material 2"],
-            "Temperatur [°C]": [None, None],
-            "Bemerkung": ["", ""]
-        })
+        fig = None
+        st.subheader("📈 Balkendiagramm")
+        try:
+            fig = plot_balken(df, station, gruppen_id)
+            st.pyplot(fig)
+        except Exception as e:
+            st.warning(f"Fehler beim Zeichnen des Diagramms: {e}")
 
-    # Dateneditor anzeigen
-    df = st.data_editor(df, num_rows="dynamic", use_container_width=True)
+        st.subheader("🧠 Auswertung")
+        auswertung = st.text_area(
+            "Was zeigt das Diagramm oder deine Beobachtung? Welche Wärmeübertragungsart ist dominant?",
+            value=auswertung_vorlage,
+            height=150,
+            key="auswertung"
+        )
 
-    # Diagramm vorbereiten
-    fig = None
-    st.subheader("📈 Balkendiagramm")
-    try:
-        from plot_utils import plot_balken  # sicherstellen, dass importiert ist
-        fig = plot_balken(df, station, gruppen_id)
-        st.pyplot(fig)
-    except Exception as e:
-        st.warning(f"Fehler beim Zeichnen des Diagramms: {e}")
-
-    # Auswertungstext
-    st.subheader("🧠 Auswertung")
-    auswertung = st.text_area(
-        "Was zeigt das Diagramm oder deine Beobachtung? Welche Wärmeübertragungsart ist dominant?",
-        value=auswertung_vorlage,
-        height=150,
-        key="auswertung"
-    )
-
-    # Speichern & PDF
-    if st.button("💾 Ergebnisse speichern"):
-        if gruppen_id:
-            from data_utils import speichere_daten
-            from pdf_utils import create_pdf
-
-            speichere_daten(speicherpfad, df, auswertung)
-            st.success(f"Ergebnisse gespeichert unter: {speicherpfad}")
-
-            pdf = create_pdf(gruppen_id, station, df, auswertung, fig)
-            st.download_button(
-                "📄 PDF herunterladen",
-                data=pdf,
-                file_name=f"{gruppen_id}_{stationsname}.pdf"
-            )
-        else:
-            st.error("Bitte zuerst eine Gruppen-ID eingeben.")
-
+        if st.button("💾 Ergebnisse speichern"):
+            if gruppen_id:
+                speichere_daten(speicherpfad, df, auswertung)
+                st.success(f"Ergebnisse gespeichert unter: {speicherpfad}")
+                pdf = create_pdf(gruppen_id, station, df, auswertung, fig)
+                st.download_button("📄 PDF herunterladen", data=pdf, file_name=f"{gruppen_id}_{stationsname}.pdf")
+            else:
+                st.error("Bitte zuerst eine Gruppen-ID eingeben.")
 
     # Station E – Temperaturverlauf
     elif station == "E – Vergleich Thermos vs. Becher":
-        st.subheader("Messwerterfassung")
+        st.subheader("📋 Messwerterfassung")
         if df.empty:
             df = pd.DataFrame({
                 "Zeit [min]": [],
@@ -156,6 +133,7 @@ else:
             })
         df = st.data_editor(df, num_rows="dynamic", use_container_width=True)
 
+        fig = None
         st.subheader("📈 Temperaturverlauf")
         try:
             fig = plot_verlauf(df, station, gruppen_id)
@@ -163,20 +141,39 @@ else:
         except Exception as e:
             st.warning(f"Fehler beim Zeichnen des Diagramms: {e}")
 
+        st.subheader("🧠 Auswertung")
+        auswertung = st.text_area(
+            "Was zeigt das Diagramm oder deine Beobachtung?",
+            value=auswertung_vorlage,
+            height=150,
+            key="auswertung"
+        )
+
+        if st.button("💾 Ergebnisse speichern"):
+            if gruppen_id:
+                speichere_daten(speicherpfad, df, auswertung)
+                st.success(f"Ergebnisse gespeichert unter: {speicherpfad}")
+                pdf = create_pdf(gruppen_id, station, df, auswertung, fig)
+                st.download_button("📄 PDF herunterladen", data=pdf, file_name=f"{gruppen_id}_{stationsname}.pdf")
+            else:
+                st.error("Bitte zuerst eine Gruppen-ID eingeben.")
+
     # Station D – Nur Text
     elif station == "D – Thermosflasche":
         st.info("📌 Diese Station benötigt keine Messwerte.")
+        st.subheader("🧠 Auswertung")
+        auswertung = st.text_area(
+            "Was zeigt deine Beobachtung?",
+            value=auswertung_vorlage,
+            height=150,
+            key="auswertung"
+        )
 
-    # Auswertung
-    st.subheader("🧠 Auswertung")
-    auswertung = st.text_area("Was zeigt das Diagramm oder deine Beobachtung?", value=auswertung_vorlage, height=150, key="auswertung")
-
-    # Speichern & PDF
-    if st.button("💾 Ergebnisse speichern"):
-        if gruppen_id:
-            speichere_daten(speicherpfad, df, auswertung)
-            st.success(f"Ergebnisse gespeichert unter: {speicherpfad}")
-            pdf = create_pdf(gruppen_id, station, df, auswertung)
-            st.download_button("📄 PDF herunterladen", data=pdf, file_name=f"{gruppen_id}_{stationsname}.pdf")
-        else:
-            st.error("Bitte zuerst eine Gruppen-ID eingeben.")
+        if st.button("💾 Ergebnisse speichern"):
+            if gruppen_id:
+                speichere_daten(speicherpfad, pd.DataFrame(), auswertung)
+                st.success(f"Ergebnisse gespeichert unter: {speicherpfad}")
+                pdf = create_pdf(gruppen_id, station, pd.DataFrame(), auswertung)
+                st.download_button("📄 PDF herunterladen", data=pdf, file_name=f"{gruppen_id}_{stationsname}.pdf")
+            else:
+                st.error("Bitte zuerst eine Gruppen-ID eingeben.")

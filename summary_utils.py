@@ -35,25 +35,31 @@ def create_summary_pdf():
     pdf.cell(0, 10, f"Erstellt am: {timestamp}", ln=True)
     pdf.ln(5)
 
-    # Daten sammeln
     daten = []
     for file in os.listdir(DATENORDNER):
         if file.endswith(".csv"):
             pfad = os.path.join(DATENORDNER, file)
-            df = pd.read_csv(pfad)
-            gruppe = file.split("_")[0]
-            station = "_".join(file.split("_")[1:]).replace(".csv", "")
-            auswertung = df["Auswertung"].iloc[0] if "Auswertung" in df.columns else ""
-            daten.append({
-                "Gruppe": gruppe,
-                "Station": station,
-                "Auswertung": auswertung
-            })
+            try:
+                df = pd.read_csv(pfad)
+                if df.empty or "Auswertung" not in df.columns:
+                    continue  # Datei überspringen, wenn leer oder keine Auswertung
+                gruppe = file.split("_")[0]
+                station = "_".join(file.split("_")[1:]).replace(".csv", "")
+                auswertung = df["Auswertung"].iloc[0]
+                daten.append({
+                    "Gruppe": gruppe,
+                    "Station": station,
+                    "Auswertung": auswertung
+                })
+            except pd.errors.EmptyDataError:
+                continue  # Datei ist leer → überspringen
+            except Exception as e:
+                print(f"Fehler beim Lesen von {file}: {e}")
+                continue
 
     # Sortieren nach Station
     daten.sort(key=lambda x: x["Station"])
 
-    # PDF-Inhalt
     aktuelle_station = ""
     for eintrag in daten:
         if eintrag["Station"] != aktuelle_station:

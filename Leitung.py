@@ -59,22 +59,34 @@ else:
         "D – Thermosflasche", "E – Vergleich Thermos vs. Becher"
     ])
 
+    stationsname = station.replace("–", "").replace(" ", "_")
+    speicherpfad = f"{DATENORDNER}/{gruppen_id}_{stationsname}.csv"
+
+    # Lade vorhandene Daten, falls vorhanden
+    if os.path.exists(speicherpfad):
+        df = pd.read_csv(speicherpfad)
+        auswertung_vorlage = df["Auswertung"].iloc[0] if "Auswertung" in df.columns else ""
+        df = df.drop(columns=["Auswertung"], errors="ignore")
+        st.info("Vorherige Eingaben wurden geladen.")
+    else:
+        df = pd.DataFrame()
+        auswertung_vorlage = ""
+
+    # Station B: keine Messwerte
     if station == "B – Konvektion":
         st.subheader("📷 Beobachtung statt Messung")
         st.info("Diese Station benötigt keine Messwerte. Bitte fertige eine Skizze oder ein Foto an und beschreibe deine Beobachtung unten.")
-        df = pd.DataFrame()  # leere Tabelle für Speicherung
 
+    # Stationen A & C: Balkendiagramm
     elif station in ["A – Wärmeleitung", "C – Wärmestrahlung"]:
         st.subheader("Messwerterfassung")
-        df = st.data_editor(
-            pd.DataFrame({
+        if df.empty:
+            df = pd.DataFrame({
                 "Kategorie": ["Material 1", "Material 2"],
                 "Temperatur [°C]": [None, None],
                 "Bemerkung": ["", ""]
-            }),
-            num_rows="dynamic",
-            use_container_width=True
-        )
+            })
+        df = st.data_editor(df, num_rows="dynamic", use_container_width=True)
 
         st.subheader("📈 Balkendiagramm")
         try:
@@ -95,18 +107,17 @@ else:
         except Exception as e:
             st.warning(f"Fehler beim Zeichnen des Diagramms: {e}")
 
+    # Station E: Temperaturverlauf
     elif station == "E – Vergleich Thermos vs. Becher":
         st.subheader("Messwerterfassung")
-        df = st.data_editor(
-            pd.DataFrame({
+        if df.empty:
+            df = pd.DataFrame({
                 "Zeit [min]": [],
                 "Temperatur Thermos [°C]": [],
                 "Temperatur Becher [°C]": [],
                 "Bemerkung": []
-            }),
-            num_rows="dynamic",
-            use_container_width=True
-        )
+            })
+        df = st.data_editor(df, num_rows="dynamic", use_container_width=True)
 
         st.subheader("📈 Temperaturverlauf")
         try:
@@ -122,19 +133,19 @@ else:
         except Exception as e:
             st.warning(f"Fehler beim Zeichnen des Diagramms: {e}")
 
+    # Station D: keine Messwerte
     elif station == "D – Thermosflasche":
         st.info("📌 Diese Station benötigt keine Messwerte. Bitte direkt zur Auswertung übergehen.")
-        df = pd.DataFrame()  # leere Tabelle für Speicherung
 
     # Auswertung
     st.subheader("🧠 Auswertung")
-    auswertung = st.text_area("Was zeigt das Diagramm oder deine Beobachtung? Welche Wärmeübertragungsart ist dominant?", height=150)
+    auswertung = st.text_area("Was zeigt das Diagramm oder deine Beobachtung? Welche Wärmeübertragungsart ist dominant?",
+                              value=auswertung_vorlage, height=150)
 
     # Speichern
     if st.button("💾 Ergebnisse speichern"):
         if gruppen_id:
-            stationsname = station.replace("–", "").replace(" ", "_")
-            speicherpfad = f"{DATENORDNER}/{gruppen_id}_{stationsname}.csv"
+            df["Auswertung"] = auswertung
             df.to_csv(speicherpfad, index=False)
             st.success(f"Ergebnisse für {gruppen_id} gespeichert unter: {speicherpfad}")
         else:

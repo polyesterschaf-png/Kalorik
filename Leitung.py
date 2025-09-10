@@ -42,11 +42,17 @@ if lehrkraft_aktiv:
         st.write(auswertung_text)
 
         fig = None
+        # Diagramm für Station E im Lehrkraftmodus
         if "Vergleich Thermos vs. Becher" in selected_file:
             st.subheader("📈 Temperaturverlauf – Station E")
             try:
-                fig = plot_verlauf(df, "Station E", os.path.basename(selected_file).split("_")[0])
-                st.pyplot(fig)
+                # Prüfen, ob alle nötigen Spalten vorhanden sind
+                required_cols = ["Zeit [min]", "Temperatur Thermos [°C]", "Temperatur Becher [°C]"]
+                if all(col in df.columns for col in required_cols):
+                    fig = plot_verlauf(df, "Station E", os.path.basename(selected_file).split("_")[0])
+                    st.pyplot(fig)
+                else:
+                    st.warning("Die Datei enthält nicht alle nötigen Spalten für das Diagramm.")
             except Exception as e:
                 st.warning(f"Fehler beim Zeichnen des Diagramms: {e}")
 

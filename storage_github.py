@@ -3,8 +3,14 @@ import base64, os, requests, time
 from typing import List, Optional
 
 API = "https://api.github.com"
+# Ein User-Agent ist zwar nicht zwingend, macht aber Integrations-Logs klarer
+USER_AGENT = "Kalorik-App/1.0 (+https://github.com/polyesterschaf-png/Kalorik)"
 
 def _cfg(key: str, default: Optional[str] = None) -> str:
+    """
+    Konfiguration zuerst aus st.secrets['github'][key], sonst aus Umgebungsvariablen GITHUB_KEY,
+    sonst default.
+    """
     try:
         import streamlit as st
         return st.secrets["github"][key]
@@ -23,10 +29,11 @@ def _headers(accept_raw: bool = False):
     h = {
         "Authorization": f"Bearer {TOKEN}",
         "Accept": "application/vnd.github+json",
+        "User-Agent": USER_AGENT,
         "X-GitHub-Api-Version": "2022-11-28",
     }
     if accept_raw:
-        # für Downloads > 1MB: raw liefert Bytes
+        # Für Downloads >1MB sollte raw verwendet werden
         h["Accept"] = "application/vnd.github.raw"
     return h
 
@@ -57,7 +64,7 @@ def _put_contents(path: str, data_b64: str, message: str, sha: Optional[str]):
 
 def gh_upload_bytes(rel_path: str, data: bytes, message: str) -> dict:
     """
-    Legt Datei neu an oder aktualisiert sie. Base64-kodiert; Retry bei 409 (sha-Race).
+    Legt Datei neu an oder aktualisiert sie. Base64-kodiert; einmaliger Retry bei 409 (sha-Race).
     """
     path = _full_path(rel_path)
     data_b64 = base64.b64encode(data).decode("ascii")
@@ -74,6 +81,9 @@ def gh_upload_bytes(rel_path: str, data: bytes, message: str) -> dict:
     return r.json()
 
 def gh_download_bytes(rel_path: str) -> bytes:
+    """
+    Lädt Dateiinhalt (Bytes). Nutzt raw media type.
+    """
     path = _full_path(rel_path)
     url = f"{API}/repos/{OWNER}/{REPO}/contents/{path}"
     r = requests.get(url, headers=_headers(accept_raw=True), params={"ref": BRANCH}, timeout=60)
@@ -83,15 +93,37 @@ def gh_download_bytes(rel_path: str) -> bytes:
     return r.content
 
 def gh_list_csv(prefix: str = "") -> List[str]:
+    """
+    Listet .csv-Dateien im BASE_PATH. Mit kleinem Retry und verständlicher Fehlermeldung.
+    """
     url = f"{API}/repos/{OWNER}/{REPO}/contents/{BASE_PATH}"
-    r = requests.get(url, headers=_headers(), params={"ref": BRANCH}, timeout=30)
-    if r.status_code == 404:
-        return []
-    r.raise_for_status()
+    last_error = None
+    for attempt in range(3):  # Retry für 5xx/Netz-Haker
+        r = requests.get(url, headers=_headers(), params={"ref": BRANCH}, timeout=30)
+        if r.status_code == 404:
+            return []
+        if r.ok:
+            break
+        last_error = r
+        time.sleep(0.4 * (attempt + 1))
+    else:
+        # Nach Retries immer noch Fehler: aussagekräftig machen
+        try:
+            detail = last_error.json().get("message", "")
+        except Exception:
+            detail = last_error.text[:300]
+        raise RuntimeError(f"GitHub list error {last_error.status_code}: {detail}")
+
     items = r.json()
-    if isinstance(items, dict):
+    if isinstance(items, dict):  # BASE_PATH ist (unerwartet) eine Datei
         return []
     names = [it["name"] for it in items if it.get("type") == "file" and it["name"].lower().endswith(".csv")]
     if prefix:
         names = [n for n in names if n.startswith(prefix)]
     return sorted(names)
+
+# Optional: einfacher Selbsttest, kann temporär im Lehrkraftmodus angezeigt werden
+def gh_self_test() -> dict:
+    r = requests.get(f"{API}/repos/{OWNER}/{REPO}/branches/{BRANCH}", headers=_headers(), timeout=15)
+    r.raise_for_status()
+    return {"ok": True, "branch": BRANCH, "head": r.json().get("commit", {}).get("sha")}

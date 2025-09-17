@@ -27,8 +27,8 @@ COMMITTER_EMAIL = _cfg("committer_email", "bot@example.org")
 
 def _headers(accept_raw: bool = False):
     h = {       
-        - "Authorization": f"Bearer {TOKEN}",
-        + "Authorization": f"token {TOKEN}",
+        "Authorization": f"Bearer {TOKEN}",
+        "Authorization": f"token {TOKEN}",
         "Accept": "application/vnd.github+json",
         "User-Agent": USER_AGENT,
         "X-GitHub-Api-Version": "2022-11-28",

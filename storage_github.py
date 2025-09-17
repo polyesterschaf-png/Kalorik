@@ -46,8 +46,15 @@ def gh_get_sha(path: str) -> Optional[str]:
     r = requests.get(url, headers=_headers(), params={"ref": BRANCH}, timeout=30)
     if r.status_code == 404:
         return None
-    r.raise_for_status()
+    if not r.ok:
+        # Hilfreiche Fehlermeldung mit Status + GitHub-Message
+        try:
+            msg = r.json().get("message", "")
+        except Exception:
+            msg = r.text[:300]
+        raise RuntimeError(f"GitHub GET {r.status_code} for {path}: {msg}")
     return r.json().get("sha")
+
 
 def _put_contents(path: str, data_b64: str, message: str, sha: Optional[str]):
     url = f"{API}/repos/{OWNER}/{REPO}/contents/{path}"

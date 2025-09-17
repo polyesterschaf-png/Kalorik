@@ -36,14 +36,22 @@ else:
         st.sidebar.error("Zugang verweigert")
 
 # Lehrkraftmodus
+# Lehrkraftmodus
 if lehrkraft_aktiv:
     st.header("👩‍🏫 Lehrkraftmodus – Gruppenauswertung")
-    files = gh_list_csv()  # <-- statt glob(...)
+    try:
+        files = gh_list_csv()  # CSVs aus GitHub
+    except Exception as e:
+        st.error("Konnte die Dateiliste aus GitHub nicht laden.")
+        st.caption(str(e))  # zeigt z. B. "GitHub list error 403: Resource not accessible by integration"
+        files = []
     if not files:
         st.info("Noch keine Daten vorhanden.")
     else:
         selected_file = st.selectbox("Gruppe/Station auswählen", files, key="lehrkraft_select")
         df, auswertung_text = lade_daten(selected_file)
+        # ... (Rest unverändert)
+
         st.write("📊 Messwerte:")
         st.dataframe(df)
         st.write("🧠 Auswertung:")

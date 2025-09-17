@@ -1,3 +1,6 @@
+
+import re
+from storage_github import gh_list_csv
 import streamlit as st
 import pandas as pd
 import os
@@ -10,6 +13,12 @@ from data_utils import lade_daten, speichere_daten
 from pdf_utils import create_pdf
 from plot_utils import plot_balken, plot_verlauf
 from summary_utils import create_summary_pdf
+
+
+def safe_component(s: str) -> str:
+    if s is None: return ""
+    s = s.strip().replace("–", "-").replace(" ", "_")
+    return re.sub(r'[^A-Za-z0-9_\-\.]', "_", s)
 
 # Streamlit Setup
 st.set_page_config(page_title="Wärmeübertragung", layout="wide")
@@ -29,8 +38,7 @@ else:
 # Lehrkraftmodus
 if lehrkraft_aktiv:
     st.header("👩‍🏫 Lehrkraftmodus – Gruppenauswertung")
-
-    files = glob.glob(f"{DATENORDNER}/*.csv")
+    files = gh_list_csv()  # <-- statt glob(...)
     if not files:
         st.info("Noch keine Daten vorhanden.")
     else:
@@ -78,7 +86,7 @@ else:
     gruppen_id = st.text_input("🔢 Gruppen-ID eingeben", max_chars=30)
     station = st.selectbox("Station auswählen", STATIONEN, key="station_schueler")
     stationsname = station.replace("–", "").replace(" ", "_")
-    speicherpfad = f"{DATENORDNER}/{gruppen_id}_{stationsname}.csv"
+    speicherpfad = f"{gruppen_id}_{stationsname}.csv" if gruppen_id else "unbenannt.csv"
 
     df, auswertung_vorlage = lade_daten(speicherpfad)
 

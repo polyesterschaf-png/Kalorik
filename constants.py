@@ -6,4 +6,4 @@ STATIONEN = [
     "E – Vergleich Thermos vs. Becher"
 ]
 
-DATENORDNER = "gruppen_daten"
+DATENORDNER = "KalorikDaten"

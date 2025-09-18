@@ -137,7 +137,7 @@ else:
        
         if st.button("💾 Ergebnisse speichern"):
             if not gruppen_id:
-            st.error("Bitte zuerst eine Gruppen-ID eingeben.")
+                st.error("Bitte zuerst eine Gruppen-ID eingeben.")
         else:
             try:
                 # ACHTUNG: zielname sicher befüllen (siehe unten)
@@ -179,7 +179,7 @@ else:
 
         if st.button("💾 Ergebnisse speichern"):
             if not gruppen_id:
-            st.error("Bitte zuerst eine Gruppen-ID eingeben.")
+                st.error("Bitte zuerst eine Gruppen-ID eingeben.")
         else:
             try:
                 # ACHTUNG: zielname sicher befüllen (siehe unten)
@@ -203,7 +203,7 @@ else:
 
         if st.button("💾 Ergebnisse speichern"):
             if not gruppen_id:
-            st.error("Bitte zuerst eine Gruppen-ID eingeben.")
+                st.error("Bitte zuerst eine Gruppen-ID eingeben.")
         else:
             try:
                 # ACHTUNG: zielname sicher befüllen (siehe unten)

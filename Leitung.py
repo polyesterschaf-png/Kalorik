@@ -134,14 +134,20 @@ else:
             key="auswertung"
         )
 
+       
         if st.button("💾 Ergebnisse speichern"):
-            if gruppen_id:
-                speichere_daten(speicherpfad, df, auswertung)
-                st.success(f"Ergebnisse gespeichert unter: {speicherpfad}")
-                pdf = create_pdf(gruppen_id, station, df, auswertung, fig)
-                st.download_button("📄 PDF herunterladen", data=pdf, file_name=f"{gruppen_id}_{stationsname}.pdf")
+            if not gruppen_id:
+            st.error("Bitte zuerst eine Gruppen-ID eingeben.")
+        else:
+            try:
+                # ACHTUNG: zielname sicher befüllen (siehe unten)
+                speichere_daten("IGNORIERT", df, auswertung, zielname=zielname)
+            except Exception as e:
+                st.error(f"GitHub-Fehler beim Speichern: {e}")  # zeigt z. B. „GitHub GET 401 ...: Bad credentials“
+                st.stop()
             else:
-                st.error("Bitte zuerst eine Gruppen-ID eingeben.")
+                st.success(f"Ergebnisse gespeichert in GitHub: {zielname}")
+
 
     # Station E – Temperaturverlauf
     elif station == "E – Vergleich Thermos vs. Becher":
@@ -172,13 +178,17 @@ else:
         )
 
         if st.button("💾 Ergebnisse speichern"):
-            if gruppen_id:
-                speichere_daten(speicherpfad, df, auswertung)
-                st.success(f"Ergebnisse gespeichert unter: {speicherpfad}")
-                pdf = create_pdf(gruppen_id, station, df, auswertung, fig)
-                st.download_button("📄 PDF herunterladen", data=pdf, file_name=f"{gruppen_id}_{stationsname}.pdf")
+            if not gruppen_id:
+            st.error("Bitte zuerst eine Gruppen-ID eingeben.")
+        else:
+            try:
+                # ACHTUNG: zielname sicher befüllen (siehe unten)
+                speichere_daten("IGNORIERT", df, auswertung, zielname=zielname)
+            except Exception as e:
+                st.error(f"GitHub-Fehler beim Speichern: {e}")  # zeigt z. B. „GitHub GET 401 ...: Bad credentials“
+                st.stop()
             else:
-                st.error("Bitte zuerst eine Gruppen-ID eingeben.")
+                st.success(f"Ergebnisse gespeichert in GitHub: {zielname}")
 
     # Station D – Nur Text
     elif station == "D – Thermosflasche":
@@ -192,10 +202,14 @@ else:
         )
 
         if st.button("💾 Ergebnisse speichern"):
-            if gruppen_id:
-                speichere_daten(speicherpfad, pd.DataFrame(), auswertung)
-                st.success(f"Ergebnisse gespeichert unter: {speicherpfad}")
-                pdf = create_pdf(gruppen_id, station, pd.DataFrame(), auswertung)
-                st.download_button("📄 PDF herunterladen", data=pdf, file_name=f"{gruppen_id}_{stationsname}.pdf")
+            if not gruppen_id:
+            st.error("Bitte zuerst eine Gruppen-ID eingeben.")
+        else:
+            try:
+                # ACHTUNG: zielname sicher befüllen (siehe unten)
+                speichere_daten("IGNORIERT", df, auswertung, zielname=zielname)
+            except Exception as e:
+                st.error(f"GitHub-Fehler beim Speichern: {e}")  # zeigt z. B. „GitHub GET 401 ...: Bad credentials“
+                st.stop()
             else:
-                st.error("Bitte zuerst eine Gruppen-ID eingeben.")
+                st.success(f"Ergebnisse gespeichert in GitHub: {zielname}")

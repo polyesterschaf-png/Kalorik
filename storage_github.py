@@ -18,7 +18,10 @@ def _headers(accept_raw: bool = False):
     return h
 
 def _encode_path(p: str) -> str:
-
+    # Vollständigen Pfad (mit evtl. Unterordnern) URL-enkodieren
+    # z. B. 'KalorikDaten/Gruppe A/Öfen – Test.csv' -> 'KalorikDaten/Gruppe%20A/%C3%96fen%20%E2%80%93%20Test.csv'
+    parts = [quote(s, safe="") for s in p.split("/")]
+    return "/".join(parts)
 
 def _cfg(key: str, default: Optional[str] = None) -> str:
     """
@@ -56,12 +59,12 @@ def _full_path(rel_path: str) -> str:
     return f"{BASE_PATH}/{rel_path}" if BASE_PATH else rel_path
 
 def gh_get_sha(path: str) -> Optional[str]:
-    url = f"{API}/repos/{OWNER}/{REPO}/contents/{path}"
+    enc = _encode_path(path)
+    url = f"{API}/repos/{OWNER}/{REPO}/contents/{enc}"
     r = requests.get(url, headers=_headers(), params={"ref": BRANCH}, timeout=30)
     if r.status_code == 404:
         return None
     if not r.ok:
-        # Hilfreiche Fehlermeldung mit Status + GitHub-Message
         try:
             msg = r.json().get("message", "")
         except Exception:
@@ -69,9 +72,9 @@ def gh_get_sha(path: str) -> Optional[str]:
         raise RuntimeError(f"GitHub GET {r.status_code} for {path}: {msg}")
     return r.json().get("sha")
 
-
 def _put_contents(path: str, data_b64: str, message: str, sha: Optional[str]):
-    url = f"{API}/repos/{OWNER}/{REPO}/contents/{path}"
+    enc = _encode_path(path)
+    url = f"{API}/repos/{OWNER}/{REPO}/contents/{enc}"
     payload = {
         "message": message,
         "content": data_b64,
@@ -80,8 +83,7 @@ def _put_contents(path: str, data_b64: str, message: str, sha: Optional[str]):
     }
     if sha:
         payload["sha"] = sha
-    r = requests.put(url, headers=_headers(), json=payload, timeout=60)
-    return r
+    return requests.put(url, headers=_headers(), json=payload, timeout=60)
 
 def gh_upload_bytes(rel_path: str, data: bytes, message: str) -> dict:
     """

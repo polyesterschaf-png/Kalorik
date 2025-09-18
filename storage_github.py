@@ -1,10 +1,24 @@
 # storage_github.py
 import base64, os, requests, time
+from urllib.parse import quote  # <— NEU
 from typing import List, Optional
 
 API = "https://api.github.com"
-# Ein User-Agent ist zwar nicht zwingend, macht aber Integrations-Logs klarer
 USER_AGENT = "Kalorik-App/1.0 (+https://github.com/polyesterschaf-png/Kalorik)"
+
+def _headers(accept_raw: bool = False):
+    h = {
+        "Authorization": f"token {TOKEN}",  # <— PAT: 'token' ist korrekt
+        "Accept": "application/vnd.github+json",
+        "User-Agent": USER_AGENT,
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+    if accept_raw:
+        h["Accept"] = "application/vnd.github.raw"
+    return h
+
+def _encode_path(p: str) -> str:
+
 
 def _cfg(key: str, default: Optional[str] = None) -> str:
     """

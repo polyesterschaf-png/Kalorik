@@ -1,4 +1,3 @@
-
 import re
 from storage_github import gh_list_csv
 import streamlit as st
@@ -20,6 +19,12 @@ def safe_component(s: str) -> str:
     s = s.strip().replace("–", "-").replace(" ", "_")
     return re.sub(r'[^A-Za-z0-9_\-\.]', "_", s)
 
+def make_zielname(gruppen_id: str, stationsname: str) -> str | None:
+    """Gibt den Dateinamen für GitHub zurück oder None, wenn keine Gruppen-ID vorhanden ist."""
+    if not gruppen_id:
+        return None
+    return f"{gruppen_id}_{stationsname}.csv"
+
 # Streamlit Setup
 st.set_page_config(page_title="Wärmeübertragung", layout="wide")
 st.title("📊 Wärmeübertragung – Digitale Auswertung")
@@ -35,7 +40,6 @@ else:
     if lehrkraft_passwort != "":
         st.sidebar.error("Zugang verweigert")
 
-# Lehrkraftmodus
 # Lehrkraftmodus
 if lehrkraft_aktiv:
     st.header("👩‍🏫 Lehrkraftmodus – Gruppenauswertung")
@@ -94,9 +98,16 @@ else:
     gruppen_id = st.text_input("🔢 Gruppen-ID eingeben", max_chars=30)
     station = st.selectbox("Station auswählen", STATIONEN, key="station_schueler")
     stationsname = station.replace("–", "").replace(" ", "_")
-    speicherpfad = f"{gruppen_id}_{stationsname}.csv" if gruppen_id else "unbenannt.csv"
+        
+    # Zielname festlegen (oder None, wenn noch keine ID vorhanden)
+    zielname = make_zielname(gruppen_id, stationsname)
 
-    df, auswertung_vorlage = lade_daten(speicherpfad)
+    # Daten laden NUR wenn eine Gruppen-ID vorhanden ist
+    if zielname:
+        df, auswertung_vorlage = lade_daten(zielname)
+    else:
+        # Ohne ID: Nichts von GitHub laden; sinnvolle Defaults bereitstellen
+        df, auswertung_vorlage = pd.DataFrame(), ""
 
     # Station B – Bild & Text
     if station == "B – Konvektion":

@@ -15,15 +15,22 @@ from summary_utils import create_summary_pdf
 
 
 def safe_component(s: str) -> str:
-    if s is None: return ""
-    s = s.strip().replace("–", "-").replace(" ", "_")
+    if s is None:
+        return ""
+    s = s.strip().replace("–", "-").replace("—", "-")
+    # Leerzeichen zu Unterstrichen
+    s = s.replace(" ", "_")
+    # nur erlaubte Zeichen
     return re.sub(r'[^A-Za-z0-9_\-\.]', "_", s)
 
 def make_zielname(gruppen_id: str, stationsname: str) -> str | None:
     """Gibt den Dateinamen für GitHub zurück oder None, wenn keine Gruppen-ID vorhanden ist."""
     if not gruppen_id:
         return None
-    return f"{gruppen_id}_{stationsname}.csv"
+    gid = safe_component(gruppen_id)
+    stn = safe_component(stationsname)
+    return f"{gid}_{stn}.csv"
+
 
 # Streamlit Setup
 st.set_page_config(page_title="Wärmeübertragung", layout="wide")
@@ -64,17 +71,16 @@ if lehrkraft_aktiv:
         fig = None
         # Diagramm für Station E im Lehrkraftmodus
         if "Vergleich Thermos vs. Becher" in selected_file:
+            required_cols_E = ["Zeit [min]", "Temperatur Thermos [°C]", "Temperatur Becher [°C]"]
+        if all(col in df.columns for col in required_cols_E):
             st.subheader("📈 Temperaturverlauf – Station E")
             try:
-                # Prüfen, ob alle nötigen Spalten vorhanden sind
-                required_cols = ["Zeit [min]", "Temperatur Thermos [°C]", "Temperatur Becher [°C]"]
-                if all(col in df.columns for col in required_cols):
-                    fig = plot_verlauf(df, "Station E", os.path.basename(selected_file).split("_")[0])
-                    st.pyplot(fig)
-                else:
-                    st.warning("Die Datei enthält nicht alle nötigen Spalten für das Diagramm.")
+                # station_label = "E – Vergleich Thermos vs. Becher"  # falls du es im Plot brauchst
+                fig = plot_verlauf(df, "E – Vergleich Thermos vs. Becher", os.path.basename(selected_file).split("_")[0])
+                st.pyplot(fig)
             except Exception as e:
                 st.warning(f"Fehler beim Zeichnen des Diagramms: {e}")
+
 
         pdf = create_pdf(
             os.path.basename(selected_file).split("_")[0],
@@ -97,10 +103,14 @@ else:
 
     gruppen_id = st.text_input("🔢 Gruppen-ID eingeben", max_chars=30)
     station = st.selectbox("Station auswählen", STATIONEN, key="station_schueler")
-    stationsname = station.replace("–", "").replace(" ", "_")
-        
+   
+    # Einheitliche, robuste Stationskomponente
+    # Wir nehmen den sichtbaren Label-Text direkt als Komponente
+    stationsname = safe_component(station)
+
     # Zielname festlegen (oder None, wenn noch keine ID vorhanden)
     zielname = make_zielname(gruppen_id, stationsname)
+
 
     # Daten laden NUR wenn eine Gruppen-ID vorhanden ist
     if zielname:
@@ -111,12 +121,27 @@ else:
 
     # Station B – Bild & Text
     if station == "B – Konvektion":
-        st.subheader("📷 Beobachtung statt Messung")
-        uploaded_file = st.file_uploader("Bild hochladen (JPG, PNG)", type=["jpg", "jpeg", "png"])
-        if uploaded_file:
-            st.image(uploaded_file, caption="Deine Beobachtung", use_column_width=True)
-            with open(f"{DATENORDNER}/{gruppen_id}_{stationsname}_bild.png", "wb") as f:
-                f.write(uploaded_file.getbuffer())
+        from storage_github import gh_upload_bytes  # sicherstellen, dass importiert
+
+    if uploaded_file:
+        st.image(uploaded_file, caption="Deine Beobachtung", use_column_width=True)
+          # Lokal kann bleiben, wenn ihr das Bild ggf. sofort im UI wiederverwendet:
+        with open(f"{DATENORDNER}/{safe_component(gruppen_id)}_{stationsname}_bild.png", "wb") as f:
+            f.write(uploaded_file.getbuffer())
+    # Zusätzlich: persistente Ablage auf GitHub
+    if gruppen_id:
+        try:
+            gh_upload_bytes(
+                f"{safe_component(gruppen_id)}_{stationsname}_bild.png",
+                uploaded_file.getbuffer(),
+                message=f"Bildupload Gruppe {gruppen_id} – {station}"
+            )
+            st.success("Bild wurde zusätzlich in GitHub gespeichert.")
+        except Exception as e:
+            st.warning(f"Bild konnte nicht in GitHub gespeichert werden: {e}")
+    else:
+        st.info("Tipp: Mit Gruppen-ID speichern wir das Bild auch in GitHub.")
+
 
     # Stationen A & C – Balkendiagramm
     elif station in ["A – Wärmeleitung", "C – Wärmestrahlung"]:
@@ -145,16 +170,14 @@ else:
             key="auswertung"
         )
 
-       
-        if st.button("💾 Ergebnisse speichern"):
-            if not gruppen_id:
-                st.error("Bitte zuerst eine Gruppen-ID eingeben.")
-        else:
+            if st.button("💾 Ergebnisse speichern"):
+                if not gruppen_id:
+                    st.error("Bitte zuerst eine Gruppen-ID eingeben.")
+                    st.stop()
             try:
-                # ACHTUNG: zielname sicher befüllen (siehe unten)
                 speichere_daten("IGNORIERT", df, auswertung, zielname=zielname)
             except Exception as e:
-                st.error(f"GitHub-Fehler beim Speichern: {e}")  # zeigt z. B. „GitHub GET 401 ...: Bad credentials“
+                st.error(f"GitHub-Fehler beim Speichern: {e}")  # z. B. „GitHub GET 401 ...: Bad credentials“
                 st.stop()
             else:
                 st.success(f"Ergebnisse gespeichert in GitHub: {zielname}")
@@ -188,15 +211,14 @@ else:
             key="auswertung"
         )
 
-        if st.button("💾 Ergebnisse speichern"):
-            if not gruppen_id:
-                st.error("Bitte zuerst eine Gruppen-ID eingeben.")
-        else:
+            if st.button("💾 Ergebnisse speichern"):
+                if not gruppen_id:
+                    st.error("Bitte zuerst eine Gruppen-ID eingeben.")
+                    st.stop()
             try:
-                # ACHTUNG: zielname sicher befüllen (siehe unten)
                 speichere_daten("IGNORIERT", df, auswertung, zielname=zielname)
             except Exception as e:
-                st.error(f"GitHub-Fehler beim Speichern: {e}")  # zeigt z. B. „GitHub GET 401 ...: Bad credentials“
+                st.error(f"GitHub-Fehler beim Speichern: {e}")  # z. B. „GitHub GET 401 ...: Bad credentials“
                 st.stop()
             else:
                 st.success(f"Ergebnisse gespeichert in GitHub: {zielname}")
@@ -212,15 +234,14 @@ else:
             key="auswertung"
         )
 
-        if st.button("💾 Ergebnisse speichern"):
-            if not gruppen_id:
-                st.error("Bitte zuerst eine Gruppen-ID eingeben.")
-        else:
+            if st.button("💾 Ergebnisse speichern"):
+                if not gruppen_id:
+                    st.error("Bitte zuerst eine Gruppen-ID eingeben.")
+                    st.stop()
             try:
-                # ACHTUNG: zielname sicher befüllen (siehe unten)
                 speichere_daten("IGNORIERT", df, auswertung, zielname=zielname)
             except Exception as e:
-                st.error(f"GitHub-Fehler beim Speichern: {e}")  # zeigt z. B. „GitHub GET 401 ...: Bad credentials“
+                st.error(f"GitHub-Fehler beim Speichern: {e}")  # z. B. „GitHub GET 401 ...: Bad credentials“
                 st.stop()
             else:
                 st.success(f"Ergebnisse gespeichert in GitHub: {zielname}")

@@ -8,7 +8,7 @@ USER_AGENT = "Kalorik-App/1.0 (+https://github.com/polyesterschaf-png/Kalorik)"
 
 def _headers(accept_raw: bool = False):
     h = {
-        "Authorization": f"token {TOKEN}",  # <— PAT: 'token' ist korrekt
+        "Authorization": f"Bearer {TOKEN}",  # "token" geht auch, "Bearer" ist aktueller
         "Accept": "application/vnd.github+json",
         "User-Agent": USER_AGENT,
         "X-GitHub-Api-Version": "2022-11-28",
@@ -16,6 +16,7 @@ def _headers(accept_raw: bool = False):
     if accept_raw:
         h["Accept"] = "application/vnd.github.raw"
     return h
+
 
 def _encode_path(p: str) -> str:
     # Vollständigen Pfad (mit evtl. Unterordnern) URL-enkodieren
@@ -41,18 +42,6 @@ BRANCH     = _cfg("branch", "main")
 BASE_PATH  = _cfg("base_path", "KalorikDaten").strip("/")
 COMMITTER_NAME  = _cfg("committer_name", "App Bot")
 COMMITTER_EMAIL = _cfg("committer_email", "bot@example.org")
-
-def _headers(accept_raw: bool = False):
-    h = {       
-        "Authorization": f"token {TOKEN}",
-        "Accept": "application/vnd.github+json",
-        "User-Agent": USER_AGENT,
-        "X-GitHub-Api-Version": "2022-11-28",
-    }
-    if accept_raw:
-        # Für Downloads >1MB sollte raw verwendet werden
-        h["Accept"] = "application/vnd.github.raw"
-    return h
 
 def _full_path(rel_path: str) -> str:
     rel_path = rel_path.strip("/")
@@ -108,18 +97,21 @@ def gh_download_bytes(rel_path: str) -> bytes:
     Lädt Dateiinhalt (Bytes). Nutzt raw media type.
     """
     path = _full_path(rel_path)
-    url = f"{API}/repos/{OWNER}/{REPO}/contents/{path}"
+    enc = _encode_path(path)  # <-- WICHTIG
+    url = f"{API}/repos/{OWNER}/{REPO}/contents/{enc}"
     r = requests.get(url, headers=_headers(accept_raw=True), params={"ref": BRANCH}, timeout=60)
     if r.status_code == 404:
         raise FileNotFoundError(path)
     r.raise_for_status()
     return r.content
 
+
 def gh_list_csv(prefix: str = "") -> List[str]:
     """
     Listet .csv-Dateien im BASE_PATH. Mit kleinem Retry und verständlicher Fehlermeldung.
     """
-    url = f"{API}/repos/{OWNER}/{REPO}/contents/{BASE_PATH}"
+    base_enc = _encode_path(BASE_PATH) if BASE_PATH else ""
+    url = f"{API}/repos/{OWNER}/{REPO}/contents/{base_enc}"
     last_error = None
     for attempt in range(3):  # Retry für 5xx/Netz-Haker
         r = requests.get(url, headers=_headers(), params={"ref": BRANCH}, timeout=30)

@@ -120,7 +120,7 @@ else:
         df, auswertung_vorlage = pd.DataFrame(), ""
 
     # Station B – Bild & Text
-elif station == "B – Konvektion":
+if station == "B – Konvektion":
     st.subheader("📷 Beobachtung statt Messung")
 
     # Bild-Upload innerhalb des Blocks definieren

@@ -1,5 +1,5 @@
 import re
-from storage_github import gh_list_csv
+from storage_github import gh_list_csv, gh_upload_bytes
 import streamlit as st
 import pandas as pd
 import os

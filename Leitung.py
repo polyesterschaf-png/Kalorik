@@ -120,27 +120,52 @@ else:
         df, auswertung_vorlage = pd.DataFrame(), ""
 
     # Station B – Bild & Text
-    if station == "B – Konvektion":
-        from storage_github import gh_upload_bytes  # sicherstellen, dass importiert
+elif station == "B – Konvektion":
+    st.subheader("📷 Beobachtung statt Messung")
 
-    if uploaded_file:
+    # Bild-Upload innerhalb des Blocks definieren
+    uploaded_file = st.file_uploader(
+        "Bild hochladen (JPG, PNG)", 
+        type=["jpg", "jpeg", "png"], 
+        key="b_bild"
+    )
+
+    if uploaded_file is not None:
+        # Bild in der App anzeigen
         st.image(uploaded_file, caption="Deine Beobachtung", use_column_width=True)
-          # Lokal kann bleiben, wenn ihr das Bild ggf. sofort im UI wiederverwendet:
-        with open(f"{DATENORDNER}/{safe_component(gruppen_id)}_{stationsname}_bild.png", "wb") as f:
-            f.write(uploaded_file.getbuffer())
-    # Zusätzlich: persistente Ablage auf GitHub
-    if gruppen_id:
+
+        # Dateiendung/Bytes ermitteln
+        import os
+        ext = os.path.splitext(uploaded_file.name)[1].lower()
+        if ext not in [".jpg", ".jpeg", ".png"]:
+            ext = ".png"
+        file_bytes = uploaded_file.getvalue()  # bytes für Datei & GitHub
+
+        # Dateiname konsistent & sicher
+        bild_dateiname = f"{safe_component(gruppen_id)}_{stationsname}_bild{ext}"
+
+        # Lokal speichern (optional – für direkte Wiederverwendung)
         try:
-            gh_upload_bytes(
-                f"{safe_component(gruppen_id)}_{stationsname}_bild.png",
-                uploaded_file.getbuffer(),
-                message=f"Bildupload Gruppe {gruppen_id} – {station}"
-            )
-            st.success("Bild wurde zusätzlich in GitHub gespeichert.")
+            os.makedirs(DATENORDNER, exist_ok=True)
+            with open(os.path.join(DATENORDNER, bild_dateiname), "wb") as f:
+                f.write(file_bytes)
         except Exception as e:
-            st.warning(f"Bild konnte nicht in GitHub gespeichert werden: {e}")
-    else:
-        st.info("Tipp: Mit Gruppen-ID speichern wir das Bild auch in GitHub.")
+            st.warning(f"Lokales Speichern des Bildes fehlgeschlagen: {e}")
+
+        # Persistentes Speichern in GitHub (nur mit Gruppen-ID)
+        if gruppen_id:
+            try:
+                gh_upload_bytes(
+                    bild_dateiname,
+                    file_bytes,
+                    message=f"Bildupload Gruppe {gruppen_id} – {station}"
+                )
+                st.success("Bild wurde zusätzlich in GitHub gespeichert.")
+            except Exception as e:
+                st.warning(f"Bild konnte nicht in GitHub gespeichert werden: {e}")
+        else:
+            st.info("Tipp: Mit Gruppen-ID speichern wir das Bild auch in GitHub.")
+
 
 
     # Stationen A & C – Balkendiagramm
